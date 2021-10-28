@@ -43,9 +43,13 @@ jobs:
   - script: 'cmake -H. -B"%BuildDirectory%" -G"%Generator%"  -DCMAKE_INSTALL_PREFIX="%FullDistributePath%\font-manager" -DNODEJS_NAME=%RuntimeName% -DNODEJS_URL=%RuntimeURL% -DNODEJS_VERSION=%RuntimeVersion%'
     displayName: 'Configure font-manager'
 
-  - script: 'dir'
-    displayName: 'Debugging'
-    
+  - script: 'node ci/bump-version.js'
+    displayName: 'Bump version number'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'tags'))
+
+  - script: 'cmake --build %BuildDirectory% --target install --config RelWithDebInfo'
+    displayName: 'Build font-manager'
+
   - script: 'git clone https://github.com/stream-labs/symsrv-scripts.git'
     displayName: 'Fetch symsrv-scripts'
 
@@ -54,13 +58,6 @@ jobs:
     env:
       AWS_SYMB_ACCESS_KEY_ID: $(AWS_SYMB_ACCESS_KEY_ID)
       AWS_SYMB_SECRET_ACCESS_KEY: $(AWS_SYMB_SECRET_ACCESS_KEY)
-
-  - script: 'node ci/bump-version.js'
-    displayName: 'Bump version number'
-    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'tags'))
-
-  - script: 'cmake --build %BuildDirectory% --target install --config RelWithDebInfo'
-    displayName: 'Build font-manager'
 
   - task: ArchiveFiles@2
     displayName: 'Generate artifact'
