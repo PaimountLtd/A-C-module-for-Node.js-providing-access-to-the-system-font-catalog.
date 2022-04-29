@@ -66,6 +66,14 @@ elseif(UNIX)
 	target_link_libraries(node_fontmanager fontconfig)
 endif()
 
+include(FetchContent)
+
+# Compare current linked libs with prev
+FetchContent_Declare(deps_checker URL "https://raw.githubusercontent.com/stream-labs/obs-studio-node/staging/dependency_checker/check_dependencies.cmd" DOWNLOAD_NO_EXTRACT true)
+FetchContent_MakeAvailable(deps_checker)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${deps_checker_SOURCE_DIR}/check_dependencies.cmd $<TARGET_FILE:node_fontmanager> ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} $<CONFIG> )
+
 if(WIN32)
 	install(FILES $<TARGET_PDB_FILE:node_fontmanager> DESTINATION . OPTIONAL)
 endif()
