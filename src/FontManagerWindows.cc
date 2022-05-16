@@ -192,6 +192,8 @@ ResultSet *getAvailableFonts() {
       if (psNames.count(result->postscriptName) == 0) {
         res->push_back(result);
         psNames.insert(result->postscriptName);
+      } else {
+        delete result;
       }
       font->Release();
     }
