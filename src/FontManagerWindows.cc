@@ -190,9 +190,10 @@ ResultSet *getAvailableFonts() {
 
       FontDescriptor *result = resultFromFont(font);
       if (psNames.count(result->postscriptName) == 0) {
-        res->push_back(resultFromFont(font));
+        res->push_back(result);
         psNames.insert(result->postscriptName);
       }
+      font->Release();
     }
 
     family->Release();
