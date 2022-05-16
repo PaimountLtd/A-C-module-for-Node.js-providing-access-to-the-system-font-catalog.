@@ -194,11 +194,10 @@ ResultSet *getAvailableFonts() {
       FontDescriptor *result = resultFromFont(font);
       if (result) {
         if (psNames.count(result->postscriptName) == 0) {
-          res->push_back(result);
+          res->push_back(resultFromFont(font));
           psNames.insert(result->postscriptName);
         }
       }
-      font->Release();
     }
     family->Release();
 
