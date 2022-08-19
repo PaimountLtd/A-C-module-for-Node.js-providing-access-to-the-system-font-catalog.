@@ -89,7 +89,8 @@ FontDescriptor *resultFromFont(IDWriteFont *font) {
   IDWriteFontFace *face = NULL;
   unsigned int numFiles = 0;
 
-  HR(font->CreateFontFace(&face));
+  if (FAILED(font->CreateFontFace(&face)))
+    return NULL;
 
   // get the font files from this font face
   IDWriteFontFile *files = NULL;
@@ -124,7 +125,7 @@ FontDescriptor *resultFromFont(IDWriteFont *font) {
 
       // this method requires windows 7, so we need to cast to an IDWriteFontFace1
       IDWriteFontFace1 *face1 = static_cast<IDWriteFontFace1 *>(face);
-      bool monospace = face1->IsMonospacedFont() == TRUE;
+      bool monospace = face1 != nullptr ? face1->IsMonospacedFont() == TRUE : false;
 
       res = new FontDescriptor(
         psName,
@@ -181,21 +182,25 @@ ResultSet *getAvailableFonts() {
     IDWriteFontFamily *family = NULL;
 
     // Get the font family.
-    HR(collection->GetFontFamily(i, &family));
-    int fontCount = family->GetFontCount();
+    if (FAILED(collection->GetFontFamily(i, &family)))
+      continue;
 
+    int fontCount = family->GetFontCount();
     for (int j = 0; j < fontCount; j++) {
       IDWriteFont *font = NULL;
-      HR(family->GetFont(j, &font));
+      if (FAILED(family->GetFont(j, &font)))
+        continue;
 
       FontDescriptor *result = resultFromFont(font);
-      if (psNames.count(result->postscriptName) == 0) {
-        res->push_back(resultFromFont(font));
-        psNames.insert(result->postscriptName);
+      if (result) {
+        if (psNames.count(result->postscriptName) == 0) {
+          res->push_back(resultFromFont(font));
+          psNames.insert(result->postscriptName);
+        }
       }
     }
-
     family->Release();
+
   }
 
   collection->Release();
