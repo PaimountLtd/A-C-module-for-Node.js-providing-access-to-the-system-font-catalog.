@@ -12,26 +12,28 @@ FontDescriptor *findFont(FontDescriptor *);
 FontDescriptor *substituteFont(char *, char *);
 
 // converts a ResultSet to a JavaScript array
-Napi::Array collectResults(napi_env env, ResultSet *results) {
-  Napi::Array res = Napi::Array::New(env, results->size());
-  int i = 0;
-  for (ResultSet::iterator it = results->begin(); it != results->end(); it++) {
-    res.Set(i++, (*it)->toJSObject(env));
-  }
+Napi::Array collectResults(napi_env env, ResultSet *results)
+{
+	Napi::Array res = Napi::Array::New(env, results->size());
+	int i = 0;
+	for (ResultSet::iterator it = results->begin(); it != results->end(); it++) {
+		res.Set(i++, (*it)->toJSObject(env));
+	}
 
-  delete results;
-  return res;
+	delete results;
+	return res;
 }
 
 // converts a FontDescriptor to a JavaScript object
-Napi::Object wrapResult(napi_env env, FontDescriptor *result) {
-  Napi::EscapableHandleScope scope(env);
-  if (result == NULL)
-    return Napi::Object::New(env);
+Napi::Object wrapResult(napi_env env, FontDescriptor *result)
+{
+	Napi::EscapableHandleScope scope(env);
+	if (result == NULL)
+		return Napi::Object::New(env);
 
-  Napi::Object res = result->toJSObject(env);
-  delete result;
-  return res;
+	Napi::Object res = result->toJSObject(env);
+	delete result;
+	return res;
 }
 
 // holds data about an operation that will be
@@ -98,35 +100,28 @@ Napi::Object wrapResult(napi_env env, FontDescriptor *result) {
 Napi::ThreadSafeFunction napi_thread;
 std::thread *worker_thread = nullptr;
 
-void worker() {
-  auto callback = []( Napi::Env env, 
-    Napi::Function jsCallback) {
-    jsCallback.Call({ collectResults(env, getAvailableFonts()) });
-  };
+void worker()
+{
+	auto callback = [](Napi::Env env, Napi::Function jsCallback) { jsCallback.Call({collectResults(env, getAvailableFonts())}); };
 
-  napi_thread.NonBlockingCall( callback );
+	napi_thread.NonBlockingCall(callback);
 }
 
-template<bool async>
-Napi::Value getAvailableFonts(const Napi::CallbackInfo& info) {
-  if (async) {
-    if (worker_thread && worker_thread->joinable())
-      worker_thread->join();
+template<bool async> Napi::Value getAvailableFonts(const Napi::CallbackInfo &info)
+{
+	if (async) {
+		if (worker_thread && worker_thread->joinable())
+			worker_thread->join();
 
-    napi_thread = Napi::ThreadSafeFunction::New(info.Env(),
-                              info[0].As<Napi::Function>(),
-                              "getAvailableFonts",
-                              0,
-                              1,
-                              [] (Napi::Env) {
-                                if (worker_thread && worker_thread->joinable())
-                                  worker_thread->join();
-                              });
-    worker_thread = new std::thread(&worker);
-    return info.Env().Undefined();
-  } else {
-    return collectResults(info.Env(), getAvailableFonts());
-  }
+		napi_thread = Napi::ThreadSafeFunction::New(info.Env(), info[0].As<Napi::Function>(), "getAvailableFonts", 0, 1, [](Napi::Env) {
+			if (worker_thread && worker_thread->joinable())
+				worker_thread->join();
+		});
+		worker_thread = new std::thread(&worker);
+		return info.Env().Undefined();
+	} else {
+		return collectResults(info.Env(), getAvailableFonts());
+	}
 }
 
 // void findFontsAsync(uv_work_t *work) {
@@ -136,28 +131,29 @@ Napi::Value getAvailableFonts(const Napi::CallbackInfo& info) {
 
 template<bool async>
 // NAN_METHOD(findFonts) {
-Napi::Value findFonts(const Napi::CallbackInfo& info) {
-  // if (info.Length() < 1 || !info[0]->IsObject() || info[0]->IsFunction())
-  //   return Nan::ThrowTypeError("Expected a font descriptor");
+Napi::Value findFonts(const Napi::CallbackInfo &info)
+{
+	// if (info.Length() < 1 || !info[0]->IsObject() || info[0]->IsFunction())
+	//   return Nan::ThrowTypeError("Expected a font descriptor");
 
-  // Local<Object> desc = info[0].As<Object>();
-  Napi::Object desc = info[0].ToObject();
-  FontDescriptor *descriptor = new FontDescriptor(desc);
+	// Local<Object> desc = info[0].As<Object>();
+	Napi::Object desc = info[0].ToObject();
+	FontDescriptor *descriptor = new FontDescriptor(desc);
 
-  // if (async) {
-  //   if (info.Length() < 2 || !info[1]->IsFunction())
-  //     return Nan::ThrowTypeError("Expected a callback");
+	// if (async) {
+	//   if (info.Length() < 2 || !info[1]->IsFunction())
+	//     return Nan::ThrowTypeError("Expected a callback");
 
-  //   AsyncRequest *req = new AsyncRequest(info[1]);
-  //   req->desc = descriptor;
-  //   uv_queue_work(uv_default_loop(), &req->work, findFontsAsync, (uv_after_work_cb) asyncCallback);
+	//   AsyncRequest *req = new AsyncRequest(info[1]);
+	//   req->desc = descriptor;
+	//   uv_queue_work(uv_default_loop(), &req->work, findFontsAsync, (uv_after_work_cb) asyncCallback);
 
-  //   return;
-  // } else {
-  Napi::Array res = collectResults(info.Env(), findFonts(descriptor));
-  delete descriptor;
-  return res;
-  // }
+	//   return;
+	// } else {
+	Napi::Array res = collectResults(info.Env(), findFonts(descriptor));
+	delete descriptor;
+	return res;
+	// }
 }
 
 // void findFontAsync(uv_work_t *work) {
@@ -167,28 +163,29 @@ Napi::Value findFonts(const Napi::CallbackInfo& info) {
 
 template<bool async>
 // NAN_METHOD(findFont) {
-Napi::Value findFont(const Napi::CallbackInfo& info) {
-  // if (info.Length() < 1 || !info[0]->IsObject() || info[0]->IsFunction())
-  //   return Nan::ThrowTypeError("Expected a font descriptor");
+Napi::Value findFont(const Napi::CallbackInfo &info)
+{
+	// if (info.Length() < 1 || !info[0]->IsObject() || info[0]->IsFunction())
+	//   return Nan::ThrowTypeError("Expected a font descriptor");
 
-  // Local<Object> desc = info[0].As<Object>();
-  Napi::Object desc = info[0].ToObject();
-  FontDescriptor *descriptor = new FontDescriptor(desc);
+	// Local<Object> desc = info[0].As<Object>();
+	Napi::Object desc = info[0].ToObject();
+	FontDescriptor *descriptor = new FontDescriptor(desc);
 
-  // if (async) {
-  //   if (info.Length() < 2 || !info[1]->IsFunction())
-  //     return Nan::ThrowTypeError("Expected a callback");
+	// if (async) {
+	//   if (info.Length() < 2 || !info[1]->IsFunction())
+	//     return Nan::ThrowTypeError("Expected a callback");
 
-  //   AsyncRequest *req = new AsyncRequest(info[1]);
-  //   req->desc = descriptor;
-  //   uv_queue_work(uv_default_loop(), &req->work, findFontAsync, (uv_after_work_cb) asyncCallback);
+	//   AsyncRequest *req = new AsyncRequest(info[1]);
+	//   req->desc = descriptor;
+	//   uv_queue_work(uv_default_loop(), &req->work, findFontAsync, (uv_after_work_cb) asyncCallback);
 
-  //   return;
-  // } else {
-  Napi::Object res = wrapResult(info.Env(), findFont(descriptor));
-  delete descriptor;
-  return res;
-  // }
+	//   return;
+	// } else {
+	Napi::Object res = wrapResult(info.Env(), findFont(descriptor));
+	delete descriptor;
+	return res;
+	// }
 }
 
 // void substituteFontAsync(uv_work_t *work) {
@@ -198,70 +195,56 @@ Napi::Value findFont(const Napi::CallbackInfo& info) {
 
 template<bool async>
 // NAN_METHOD(substituteFont) {
-Napi::Value substituteFont(const Napi::CallbackInfo& info) {
-  // if (info.Length() < 1 || !info[0]->IsString())
-  //   return Nan::ThrowTypeError("Expected postscript name");
+Napi::Value substituteFont(const Napi::CallbackInfo &info)
+{
+	// if (info.Length() < 1 || !info[0]->IsString())
+	//   return Nan::ThrowTypeError("Expected postscript name");
 
-  // if (info.Length() < 2 || !info[1]->IsString())
-  //   return Nan::ThrowTypeError("Expected substitution string");
+	// if (info.Length() < 2 || !info[1]->IsString())
+	//   return Nan::ThrowTypeError("Expected substitution string");
 
-  // Nan::Utf8String postscriptName(info[0]);
-  // Nan::Utf8String substitutionString(info[1]);
+	// Nan::Utf8String postscriptName(info[0]);
+	// Nan::Utf8String substitutionString(info[1]);
 
-  // if (async) {
-  //   if (info.Length() < 3 || !info[2]->IsFunction())
-  //     return Nan::ThrowTypeError("Expected a callback");
+	// if (async) {
+	//   if (info.Length() < 3 || !info[2]->IsFunction())
+	//     return Nan::ThrowTypeError("Expected a callback");
 
-  //   // copy the strings since the JS garbage collector might run before the async request is finished
-  //   char *ps = new char[postscriptName.length() + 1];
-  //   strcpy(ps, *postscriptName);
+	//   // copy the strings since the JS garbage collector might run before the async request is finished
+	//   char *ps = new char[postscriptName.length() + 1];
+	//   strcpy(ps, *postscriptName);
 
-  //   char *sub = new char[substitutionString.length() + 1];
-  //   strcpy(sub, *substitutionString);
+	//   char *sub = new char[substitutionString.length() + 1];
+	//   strcpy(sub, *substitutionString);
 
-  //   AsyncRequest *req = new AsyncRequest(info[2]);
-  //   req->postscriptName = ps;
-  //   req->substitutionString = sub;
-  //   uv_queue_work(uv_default_loop(), &req->work, substituteFontAsync, (uv_after_work_cb) asyncCallback);
+	//   AsyncRequest *req = new AsyncRequest(info[2]);
+	//   req->postscriptName = ps;
+	//   req->substitutionString = sub;
+	//   uv_queue_work(uv_default_loop(), &req->work, substituteFontAsync, (uv_after_work_cb) asyncCallback);
 
-  //   return;
-  // } else {
-  // info.GetReturnValue().Set(wrapResult(substituteFont(*postscriptName, *substitutionString)));
-  return wrapResult(info.Env(), substituteFont((char*)info[0].ToString().Utf8Value().c_str(), (char*)info[1].ToString().Utf8Value().c_str()));
-  // }
+	//   return;
+	// } else {
+	// info.GetReturnValue().Set(wrapResult(substituteFont(*postscriptName, *substitutionString)));
+	return wrapResult(info.Env(), substituteFont((char *)info[0].ToString().Utf8Value().c_str(), (char *)info[1].ToString().Utf8Value().c_str()));
+	// }
 }
 
 void Init(Napi::Env env, Napi::Object exports)
 {
-	exports.Set(
-		Napi::String::New(env, "getAvailableFonts"),
-		Napi::Function::New(env, getAvailableFonts<true>));
-	exports.Set(
-		Napi::String::New(env, "getAvailableFontsSync"),
-		Napi::Function::New(env, getAvailableFonts<false>));
-	exports.Set(
-		Napi::String::New(env, "findFonts"),
-		Napi::Function::New(env, findFonts<true>));
-	exports.Set(
-		Napi::String::New(env, "findFontsSync"),
-		Napi::Function::New(env, findFonts<false>));
-	exports.Set(
-		Napi::String::New(env, "findFont"),
-		Napi::Function::New(env, findFont<true>));
-	exports.Set(
-		Napi::String::New(env, "findFontSync"),
-		Napi::Function::New(env, findFont<false>));
-	exports.Set(
-		Napi::String::New(env, "substituteFont"),
-		Napi::Function::New(env, substituteFont<true>));
-	exports.Set(
-		Napi::String::New(env, "substituteFontSync"),
-		Napi::Function::New(env, substituteFont<false>));
+	exports.Set(Napi::String::New(env, "getAvailableFonts"), Napi::Function::New(env, getAvailableFonts<true>));
+	exports.Set(Napi::String::New(env, "getAvailableFontsSync"), Napi::Function::New(env, getAvailableFonts<false>));
+	exports.Set(Napi::String::New(env, "findFonts"), Napi::Function::New(env, findFonts<true>));
+	exports.Set(Napi::String::New(env, "findFontsSync"), Napi::Function::New(env, findFonts<false>));
+	exports.Set(Napi::String::New(env, "findFont"), Napi::Function::New(env, findFont<true>));
+	exports.Set(Napi::String::New(env, "findFontSync"), Napi::Function::New(env, findFont<false>));
+	exports.Set(Napi::String::New(env, "substituteFont"), Napi::Function::New(env, substituteFont<true>));
+	exports.Set(Napi::String::New(env, "substituteFontSync"), Napi::Function::New(env, substituteFont<false>));
 }
 
-Napi::Object main_node(Napi::Env env, Napi::Object exports) {
-    Init(env, exports);
-    return exports;
+Napi::Object main_node(Napi::Env env, Napi::Object exports)
+{
+	Init(env, exports);
+	return exports;
 }
 
 NODE_API_MODULE(node_fontmanager, main_node)
