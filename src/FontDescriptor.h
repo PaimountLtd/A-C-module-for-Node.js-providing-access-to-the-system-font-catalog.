@@ -69,8 +69,8 @@ public:
 		monospace = false;
 	}
 
-	FontDescriptor(const char *path, const char *postscriptName, const char *family, const char *style, FontWeight weight, FontWidth width, bool italic, bool oblique,
-		       bool monospace)
+	FontDescriptor(const char *path, const char *postscriptName, const char *family, const char *style, FontWeight weight, FontWidth width, bool italic,
+		       bool oblique, bool monospace)
 	{
 		this->path = copyString(path);
 		this->postscriptName = copyString(postscriptName);
