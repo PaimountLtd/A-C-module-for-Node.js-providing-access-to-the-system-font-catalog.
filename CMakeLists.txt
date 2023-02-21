@@ -1,11 +1,24 @@
 cmake_minimum_required(VERSION 3.0)
 project(node_fontmanager)
 
+if(APPLE)
+	if (NOT CMAKE_OSX_ARCHITECTURES)
+		set(CMAKE_OSX_ARCHITECTURES "${CMAKE_HOST_SYSTEM_PROCESSOR}")
+	endif()
+	if (NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+		if ("${CMAKE_OSX_ARCHITECTURES}" STREQUAL "arm64")
+			set(CMAKE_OSX_DEPOLYMENT_TARGET "11.0")
+		else()
+			set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
+		endif()
+	endif()
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
-SET(NODEJS_URL "https://atom.io/download/atom-shell" CACHE STRING "Node.JS URL")
+SET(NODEJS_URL "https://artifacts.electronjs.org/headers/dist" CACHE STRING "Node.JS URL")
 SET(NODEJS_NAME "iojs" CACHE STRING "Node.JS Name")
-SET(NODEJS_VERSION "v9.3.3" CACHE STRING "Node.JS Version")
+SET(NODEJS_VERSION "v17.4.11" CACHE STRING "Node.JS Version")
 
 
 include(NodeJS)
